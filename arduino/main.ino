@@ -2,15 +2,17 @@ int x;
 
 #define IDLE 0
 #define WAITING_IMAGE 1
-#define READING_PIN 2
-#define WAITING_PIN 3
-#define ACCEPT 4
-#define REJECT 5
+#define READING_FINGER 2
+#define READING_PIN 3
+#define WAITING_PIN 4
+#define ACCEPT 5
+#define REJECT 6
 
 #define ACCEPT_DELAY 5000
 #define REJECT_DELAY 5000
 
-#define BUTTON_PIN 2
+#define BUTTON_CAMERA_PIN 2
+#define BUTTON_FINGER_PIN 3
 
 int STATE = IDLE;
 unsigned long LAST_CHANGE_TIME = 0;
@@ -57,8 +59,12 @@ void setStates(int state) {
   }
 }
 
-bool isButtonPressed() {
-  return digitalRead(BUTTON_PIN) == HIGH;
+bool isCameraButtonPressed() {
+  return digitalRead(BUTTON_CAMERA_PIN) == HIGH;
+}
+
+bool isFingerButtonPressed() {
+  return digitalRead(BUTTON_FINGER_PIN) == HIGH;
 }
 
 bool isTimeout(unsigned long delay) {
@@ -95,17 +101,27 @@ void setup() {
 	Serial.begin(115200); 
 	Serial.setTimeout(1); 
   initLCD();
-  pinMode(BUTTON_PIN, INPUT);
+  pinMode(BUTTON_CAMERA_PIN, INPUT);
+  pinMode(BUTTON_FINGER_PIN, INPUT);
 } 
 void loop() {
   switch (state) {
     case IDLE:
-      if (isButtonPressed()) {
+      if (isCameraButtonPressed()) {
         // Send request to server to take image
         Serial.println("TAKE_IMAGE");
         // Wait for response
         setStates(WAITING_IMAGE);
       }
+      if (isFingerButtonPressed()) {
+        // Wait for response
+        setStates(READING_FINGER);
+      }
+    case READING_FINGER:
+      // Read finger
+      // TODO: fpm10a
+
+
     case WAITING_IMAGE:
       // Wait for image
       if (Serial.available() > 0) {
