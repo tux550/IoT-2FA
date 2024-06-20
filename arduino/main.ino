@@ -7,9 +7,13 @@ int x;
 #define ACCEPT 4
 #define REJECT 5
 
+#define ACCEPT_DELAY 5000
+#define REJECT_DELAY 5000
+
 #define BUTTON_PIN 2
 
 int STATE = IDLE;
+unsigned long LAST_CHANGE_TIME = 0;
 
 // LCD display
 const int rs = 12, en = 11, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
@@ -29,7 +33,6 @@ Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_N
 
 // PIN input
 String inputString = "";
-char inputStringIter = 0;
 
 // State management
 void initLCD() {
@@ -39,6 +42,7 @@ void initLCD() {
 
 void setStates(int state) {
   STATE = state;
+  LAST_CHANGE_TIME = millis();
   lcd.clear();
   switch (state) {
     case IDLE:
@@ -55,6 +59,35 @@ void setStates(int state) {
 
 bool isButtonPressed() {
   return digitalRead(BUTTON_PIN) == HIGH;
+}
+
+bool isTimeout(unsigned long delay) {
+  return millis() - LAST_CHANGE_TIME > delay;
+}
+
+bool readKeypadInput() // return true if input is done
+{
+    // GetKey
+    char key = keypad.getKey();
+    if (key)
+    {
+      // NumberInput
+      char currentInputChar = key;
+      if (key - '0' >= 0 && key - '0' <= 9)
+      {
+        inputString += (char)key;
+        return false;
+      }
+      // RegisterInput
+      else if (key == '#')
+      {
+        return true;
+      }
+    }
+    else
+    {
+      return false;
+    }
 }
 
 // Main function
@@ -85,11 +118,16 @@ void loop() {
         }
       }
     case READING_PIN:
-      // TODO: Read pin
-      // if key == # send to server and wait for response
+      // Read PIN. If # is pressed, send PIN to server
+      if (readKeypadInput()) {
+        // Send pin to server
+        Serial.println("PIN:" + inputString);
+        inputString = "";
+        setStates(WAITING_PIN);
+      }
     case WAITING_PIN:
       // Wait for response
-      if (Serial.available() > 0) {
+      if (Serial.available() != 0) {
         // Wait for response
         String response = Serial.readString();
         if (response == "ACCEPT") {
@@ -100,7 +138,13 @@ void loop() {
       }
     case ACCEPT:
       // Display accept message for 5 seconds
+      if (isTimeout(ACCEPT_DELAY)) {
+        setStates(IDLE);
+      }
     case REJECT:
       // Display reject message for 5 seconds
+      if (isTimeout(REJECT_DELAY)) {
+        setStates(IDLE);
+      }
   }
 } 
