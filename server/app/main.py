@@ -1,8 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 
-import database 
-import models 
-import schemas 
+import database
+import models
+import schemas
 from sqlalchemy.orm import Session
 
 import numpy as np
@@ -12,9 +12,7 @@ app = FastAPI()
 
 
 @app.post("/users/")
-def create_user(user: schemas.UserCreate):
-    db = database.get_db()
-
+def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     db_item = models.User(
         name=user.name, encoding=user.encoding, money=user.money)
     db.add(db_item)
@@ -25,14 +23,13 @@ def create_user(user: schemas.UserCreate):
 
 
 @app.get("/users/")
-def read_users(skip: int = 0, limit: int = 10):
-    db = database.get_db()
+def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(database.get_db)):
     users = db.query(models.User).offset(skip).limit(limit).all()
     return users
 
 
 @app.get("/user_search/")
-def search_user(face_encoding: list[float]):
+def search_user(face_encoding: list[float], db: Session = Depends(database.get_db)):
     threshold = 0.85
     db = database.get_db()
     # fc_enc = np.array(face_encoding)
