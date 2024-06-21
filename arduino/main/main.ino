@@ -1,5 +1,7 @@
 // TODO: Add user ID to response of finger and camera from server
 // TODO: Add LEDs
+#include <Keypad.h>
+#include <LiquidCrystal.h>
 
 #define IDLE 0
 #define WAITING_IMAGE 1
@@ -15,8 +17,7 @@
 #define BUTTON_CAMERA_PIN 2
 #define BUTTON_FINGER_PIN 3
 
-int STATE = IDLE;
-unsigned long LAST_CHANGE_TIME = 0;
+
 
 // Fingerprint sensor
 #include <Adafruit_Fingerprint.h>
@@ -28,6 +29,12 @@ SoftwareSerial mySerial(4, 5);
 #define mySerial Serial1
 #endif
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
+
+int STATE = IDLE;
+unsigned long LAST_CHANGE_TIME = 0;
+const int ROW_NUM = 4;
+const int COLUMN_NUM = 4;
+
 
 // LCD display
 const int rs = 27, en = 29, d4 = 31, d5 = 33, d6 = 35, d7 = 37;
@@ -58,6 +65,7 @@ void setStates(int state) {
   STATE = state;
   LAST_CHANGE_TIME = millis();
   lcd.clear();
+  //Serial.println("estado: " + String(state));
   switch (state) {
     case IDLE:
       lcd.print("IDLE");
@@ -72,10 +80,12 @@ void setStates(int state) {
 }
 
 bool isCameraButtonPressed() {
+  //Serial.println("aqui: " + digitalRead(BUTTON_CAMERA_PIN));
   return digitalRead(BUTTON_CAMERA_PIN) == HIGH;
 }
 
 bool isFingerButtonPressed() {
+  return false;
   return digitalRead(BUTTON_FINGER_PIN) == HIGH;
 }
 
@@ -117,7 +127,7 @@ void setup() {
   pinMode(BUTTON_FINGER_PIN, INPUT);
 } 
 void loop() {
-  switch (state) {
+  switch (STATE) {
     case IDLE:
       if (isCameraButtonPressed()) {
         // Send request to server to take image
@@ -125,7 +135,7 @@ void loop() {
         // Wait for response
         setStates(WAITING_IMAGE);
       }
-      if (isFingerButtonPressed()) {
+      else if (isFingerButtonPressed()) {
         // Wait for response
         setStates(READING_FINGER);
       }
@@ -143,7 +153,7 @@ void loop() {
         // Wait for response
         String response = Serial.readString();
         if (response == "ACCEPT") {
-          setStates(READING_PIN)
+          setStates(READING_PIN);
         } else {
           setStates(REJECT);
         }
@@ -162,7 +172,7 @@ void loop() {
         // Wait for response
         String response = Serial.readString();
         if (response == "ACCEPT") {
-          setStates(ACCEPT)
+          setStates(ACCEPT);
         } else {
           setStates(REJECT);
         }
@@ -179,21 +189,6 @@ void loop() {
       }
   }
 } 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 int getFingerprintIDez() {
