@@ -1,4 +1,5 @@
-int x; 
+// TODO: Add user ID to response of finger and camera from server
+// TODO: Add LEDs
 
 #define IDLE 0
 #define WAITING_IMAGE 1
@@ -17,8 +18,19 @@ int x;
 int STATE = IDLE;
 unsigned long LAST_CHANGE_TIME = 0;
 
+// Fingerprint sensor
+#include <Adafruit_Fingerprint.h>
+#if (defined(__AVR__) || defined(ESP8266)) && !defined(__AVR_ATmega2560__)
+// pin #4 is IN from sensor 
+// pin #5 is OUT from arduino 
+SoftwareSerial mySerial(4, 5);
+#else
+#define mySerial Serial1
+#endif
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
+
 // LCD display
-const int rs = 12, en = 11, d4 = 2, d5 = 3, d6 = 4, d7 = 5;
+const int rs = 27, en = 29, d4 = 31, d5 = 33, d6 = 35, d7 = 37;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // 4x4 Keypad
@@ -119,9 +131,12 @@ void loop() {
       }
     case READING_FINGER:
       // Read finger
-      // TODO: fpm10a
-
-
+      int id = getFingerprintIDez();
+      if (id != -1) {
+        // Send id to server
+        Serial.println("FINGER:" + id);
+        setStates(WAITING_PIN);
+      }
     case WAITING_IMAGE:
       // Wait for image
       if (Serial.available() > 0) {
@@ -164,3 +179,37 @@ void loop() {
       }
   }
 } 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+int getFingerprintIDez() {
+  // If finger is detected return the ID
+  // Else return -1
+
+  uint8_t p = finger.getImage();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  p = finger.image2Tz();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  p = finger.fingerFastSearch();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  //Serial.print("Found ID #"); Serial.print(finger.fingerID);
+  //Serial.print(" with confidence of "); Serial.println(finger.confidence);
+  return finger.fingerID;
+}
