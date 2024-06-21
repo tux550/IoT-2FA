@@ -1,4 +1,5 @@
 annotated-types==0.7.0
+sqlalchemy==1.4.27
 anyio==4.4.0
 certifi==2024.6.2
 click==8.1.7
