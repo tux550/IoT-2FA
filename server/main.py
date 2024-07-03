@@ -44,7 +44,7 @@ def get_image():
         return None
 
 
-def mock_face_encodings(_):
+def mock_face_encodings():
 
     vector = [-0.03095795,  0.10461359,  0.05317945,  0.01200438, -0.11492222,  0.02242018,
               -0.01956706, -0.05965982,  0.17701212, -0.15657477,  0.17493843,  0.02731113,
@@ -74,7 +74,7 @@ def mock_face_encodings(_):
 def get_most_close_user(face_encoding):
     conn = http.client.HTTPConnection('localhost:8000')
 
-    conn.request("GET", "/user_search/", body=face_encoding)
+    conn.request("GET", "/user_search", body=face_encoding)
 
     response = conn.getresponse()
 
@@ -127,7 +127,7 @@ def get_face_encodings():
                 print("No face found", face_encodings)
             else:
                 cv2.destroyAllWindows()
-                return face_encodings[0]
+                return list(face_encodings[0])
 
         cv2.imshow('frame', frame)
 
@@ -135,9 +135,13 @@ def get_face_encodings():
             break
 
 
-print(get_face_encodings())
+# encodings = mock_face_encodings()
+# encodings = get_face_encodings()
+# result = get_most_close_user(json.dumps(encodings))
 
-exit(0)
+# print(result)
+
+
 # Define serial port and baud rate
 serial_port = 'COM7'
 baud_rate = 115200
@@ -161,7 +165,7 @@ try:
                 # cv2.imwrite('face.png', face)
                 # face_encoding = mock_face_encodings(face)
 
-                face_encoding = get_face_encodings(face)
+                face_encoding = get_face_encodings()
 
                 print(f'JOB:"imagen obtenida"')
 

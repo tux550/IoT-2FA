@@ -12,6 +12,7 @@ class User(Base):
     name = Column(String, index=True)
     face_encoding = Column(ARRAY(Float))
     money = Column(Float, default=0.0)
+    pin = Column(String)
 
 metadata = Base.metadata
 
