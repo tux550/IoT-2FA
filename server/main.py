@@ -13,7 +13,7 @@ from face_recognizer import face_recognition_fun, face_encodings_fun
 
 
 def get_image():
-    conn = http.client.HTTPConnection('192.168.181.111')
+    conn = http.client.HTTPConnection('192.168.225.111')
 
     # Send GET request
     conn.request("GET", "/capture")
@@ -44,7 +44,7 @@ def get_image():
         return None
 
 
-def get_face_encoding(image):
+def mock_face_encodings(_):
 
     vector = [-0.03095795,  0.10461359,  0.05317945,  0.01200438, -0.11492222,  0.02242018,
               -0.01956706, -0.05965982,  0.17701212, -0.15657477,  0.17493843,  0.02731113,
@@ -69,9 +69,6 @@ def get_face_encoding(image):
               0.0412778,  -0.05939937, -0.11442997, -0.08944571,  0.00468835, -0.06013031,
               0.06386436,  0.01938863]
     return vector
-    face_location = face_recognition.face_locations(image)
-    face_encodings = face_encodings_fun(image, face_location)
-    return face_encodings
 
 
 def get_most_close_user(face_encoding):
@@ -88,19 +85,59 @@ def get_most_close_user(face_encoding):
         print(f"Failed to get images: {response.status} {response.reason}")
         return None
 
+def face_recognition_fun(frame, haar_cascade): 
+    
+    gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = haar_cascade.detectMultiScale(gray_img, 
+                                          scaleFactor=1.05, 
+                                          minNeighbors=1,                                           
+                                          minSize = (
+                                                    int(640 * 0.4), 
+                                                    int(480 * 0.4))
+                                        )
+    max_area = -1
+    cropped_image = [None]
+    
+    for x, y, w, h in faces:
+        # crop the image to select only the face
+        if w * h > max_area:
+            max_area = w * h
+            cropped_image[0] =  frame[y : y + h, x : x + w]
+        
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.imshow('frame', frame)
+        
+    return cropped_image[0]
 # save face
-# while True:
-#     face = get_image()
-#     face_location = face_recognition.face_locations(face)
-#     face_encodings = face_encodings_fun(face, face_location)
-#     cv2.imwrite('face.png', face)
-#     if face_encodings == []:
-#         print("No face found")
-#     else:
-#         print(face_encodings[0])
-#         break
 
 
+def get_face_encodings():
+
+    haar_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+    while True:
+        frame = get_image()
+
+        face = face_recognition_fun(frame, haar_cascade)
+        # cv2.imwrite('face.png', face)
+
+        if face is not None:            
+            face_location = face_recognition.face_locations(face)
+            face_encodings = face_encodings_fun(frame, face_location)
+            if face_encodings == []:
+                print("No face found", face_encodings)
+            else:
+                cv2.destroyAllWindows()
+                return face_encodings[0]
+
+        cv2.imshow('frame', frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+
+print(get_face_encodings())
+
+exit(0)
 # Define serial port and baud rate
 serial_port = 'COM7'
 baud_rate = 115200
@@ -119,10 +156,12 @@ try:
             print(f'SERIAL:"{line}"')
 
             if line == 'TAKE_IMAGE':
-                face = get_image()
+                # face = get_image()
 
-                cv2.imwrite('face.png', face)
-                face_encoding = get_face_encoding(face)
+                # cv2.imwrite('face.png', face)
+                # face_encoding = mock_face_encodings(face)
+
+                face_encoding = get_face_encodings(face)
 
                 print(f'JOB:"imagen obtenida"')
 
