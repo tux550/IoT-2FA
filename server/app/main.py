@@ -20,7 +20,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
     db.commit()
     db.refresh(db_item)
 
-    return user
+    return db_item
 
 @app.post("/verify-pin")
 def verify_pin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):

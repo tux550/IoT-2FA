@@ -124,7 +124,7 @@ def get_face_encodings():
             face_location = face_recognition.face_locations(face)
             face_encodings = face_encodings_fun(frame, face_location)
             if face_encodings == []:
-                print("No face found", face_encodings)
+                print("No se pudo conseguir encodings...", face_encodings)
             else:
                 cv2.destroyAllWindows()
                 return list(face_encodings[0])
@@ -146,53 +146,54 @@ def get_face_encodings():
 serial_port = 'COM7'
 baud_rate = 115200
 
-# Establish serial connection
-ser = serial.Serial(serial_port, baud_rate, timeout=1)
+if __name__ == '__main__':
+    # Establish serial connection
+    ser = serial.Serial(serial_port, baud_rate, timeout=1)
 
-try:
-    # Wait for serial to initialize
-    time.sleep(2)
+    try:
+        # Wait for serial to initialize
+        time.sleep(2)
 
-    # Read and print data from Arduino indefinitely
-    while True:
-        if ser.in_waiting > 0:
-            line = ser.readline().decode('utf-8').rstrip()
-            print(f'SERIAL:"{line}"')
+        # Read and print data from Arduino indefinitely
+        while True:
+            if ser.in_waiting > 0:
+                line = ser.readline().decode('utf-8').rstrip()
+                print(f'SERIAL:"{line}"')
 
-            if line == 'TAKE_IMAGE':
-                # face = get_image()
+                if line == 'TAKE_IMAGE':
+                    # face = get_image()
 
-                # cv2.imwrite('face.png', face)
-                # face_encoding = mock_face_encodings(face)
+                    # cv2.imwrite('face.png', face)
+                    # face_encoding = mock_face_encodings(face)
 
-                face_encoding = get_face_encodings()
+                    face_encoding = get_face_encodings()
 
-                print(f'JOB:"imagen obtenida"')
+                    print(f'JOB:"imagen obtenida"')
 
-                # face encoding to string
-                user = get_most_close_user(
-                    json.dumps(face_encoding)
-                )
+                    # face encoding to string
+                    user = get_most_close_user(
+                        json.dumps(face_encoding)
+                    )
 
-                print(f'JOB:"usuario obtenido"')
+                    print(f'JOB:"usuario obtenido"')
 
-                if user is not None:
-                    ser.write('ACCEPT\0'.encode())
-                    time.sleep(0.05)
-                else:
-                    ser.write(b'REJECT')
-                    time.sleep(0.05)
-            elif line.startswith('PIN:'):
-                if line.endswith('1234'):
-                    ser.write('ACCEPT\0'.encode())
-                    time.sleep(0.05)
-                else:
-                    ser.write('REJECT\0'.encode())
-                    time.sleep(0.05)
+                    if user is not None:
+                        ser.write('ACCEPT\0'.encode())
+                        time.sleep(0.05)
+                    else:
+                        ser.write(b'REJECT')
+                        time.sleep(0.05)
+                elif line.startswith('PIN:'):
+                    if line.endswith('1234'):
+                        ser.write('ACCEPT\0'.encode())
+                        time.sleep(0.05)
+                    else:
+                        ser.write('REJECT\0'.encode())
+                        time.sleep(0.05)
 
-except KeyboardInterrupt:
-    print("\nExiting...")
+    except KeyboardInterrupt:
+        print("\nExiting...")
 
-finally:
-    # Close serial connection
-    ser.close()
+    finally:
+        # Close serial connection
+        ser.close()
