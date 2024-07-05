@@ -85,28 +85,29 @@ def get_most_close_user(face_encoding):
         print(f"Failed to get images: {response.status} {response.reason}")
         return None
 
-def face_recognition_fun(frame, haar_cascade): 
-    
+
+def face_recognition_fun(frame, haar_cascade):
+
     gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = haar_cascade.detectMultiScale(gray_img, 
-                                          scaleFactor=1.05, 
-                                          minNeighbors=1,                                           
-                                          minSize = (
-                                                    int(640 * 0.4), 
-                                                    int(480 * 0.4))
-                                        )
+    faces = haar_cascade.detectMultiScale(gray_img,
+                                          scaleFactor=1.05,
+                                          minNeighbors=1,
+                                          minSize=(
+                                              int(640 * 0.4),
+                                              int(480 * 0.4))
+                                          )
     max_area = -1
     cropped_image = [None]
-    
+
     for x, y, w, h in faces:
         # crop the image to select only the face
         if w * h > max_area:
             max_area = w * h
-            cropped_image[0] =  frame[y : y + h, x : x + w]
-        
+            cropped_image[0] = frame[y: y + h, x: x + w]
+
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         cv2.imshow('frame', frame)
-        
+
     return cropped_image[0]
 # save face
 
@@ -120,7 +121,7 @@ def get_face_encodings():
         face = face_recognition_fun(frame, haar_cascade)
         # cv2.imwrite('face.png', face)
 
-        if face is not None:            
+        if face is not None:
             face_location = face_recognition.face_locations(face)
             face_encodings = face_encodings_fun(frame, face_location)
             if face_encodings == []:
@@ -135,9 +136,27 @@ def get_face_encodings():
             break
 
 
+def verify_user_pin(id, pin):
+    conn = http.client.HTTPConnection('localhost:8000')
+
+    payload=json.dumps({"pin": pin, "id": id})
+    print(payload)
+    conn.request("POST", "/verify-pin",
+                 body=payload)
+
+    response = conn.getresponse()
+
+    if response.status == 200:
+        data = response.read()
+        return json.loads(data)
+    else:
+        print(f"Failed to get images: {response.status} {response.reason}")
+        return None
+
 # encodings = mock_face_encodings()
 # encodings = get_face_encodings()
 # result = get_most_close_user(json.dumps(encodings))
+# exit(0)
 
 # print(result)
 
@@ -149,6 +168,7 @@ baud_rate = 115200
 if __name__ == '__main__':
     # Establish serial connection
     ser = serial.Serial(serial_port, baud_rate, timeout=1)
+    id = None
 
     try:
         # Wait for serial to initialize
@@ -171,25 +191,34 @@ if __name__ == '__main__':
                     print(f'JOB:"imagen obtenida"')
 
                     # face encoding to string
-                    user = get_most_close_user(
+                    user_id = get_most_close_user(
                         json.dumps(face_encoding)
                     )
 
+
                     print(f'JOB:"usuario obtenido"')
 
-                    if user is not None:
+                    if user_id is not None:
                         ser.write('ACCEPT\0'.encode())
+                        id = user_id 
                         time.sleep(0.05)
                     else:
                         ser.write(b'REJECT')
                         time.sleep(0.05)
                 elif line.startswith('PIN:'):
-                    if line.endswith('1234'):
+                    _, pin = line.strip().split(":")
+                    ok = verify_user_pin(id, pin)
+
+                    if ok:
                         ser.write('ACCEPT\0'.encode())
                         time.sleep(0.05)
                     else:
                         ser.write('REJECT\0'.encode())
                         time.sleep(0.05)
+                elif line.startswith('FINGER:'):
+                    trimmed_line = line.strip()
+                    _, number = trimmed_line.split(':')
+                    id = int(number)
 
     except KeyboardInterrupt:
         print("\nExiting...")
