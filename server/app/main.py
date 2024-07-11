@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
+
 import random
 
 import database
@@ -10,6 +12,15 @@ import numpy as np
 
 
 app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*',],
+    allow_credentials=False,
+    allow_methods=["*",],
+    allow_headers=["*",],
+)
 
 TICKET_COST = 5
 
