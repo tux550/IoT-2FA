@@ -5,10 +5,22 @@ from sqlalchemy import pool
 
 from models import metadata
 from alembic import context
+import os
+import urllib.parse
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+PGHOST=os.getenv("PGHOST")
+PGUSER=os.getenv("PGUSER")
+PGPORT=os.getenv("PGPORT")
+PGDATABASE=os.getenv("PGDATABASE")
+PGPASSWORD=os.getenv("PGPASSWORD")
+
+encoded_password = urllib.parse.quote_plus(PGPASSWORD).replace('%', '%%')
+
+DB_URI = f"postgresql://{PGUSER}:{encoded_password}@{PGHOST}:{PGPORT}/{PGDATABASE}"
+config.set_main_option('sqlalchemy.url', DB_URI)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

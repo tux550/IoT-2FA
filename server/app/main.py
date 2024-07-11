@@ -11,6 +11,7 @@ import numpy as np
 
 app = FastAPI()
 
+TICKET_COST = 5
 
 @app.post("/user")
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
@@ -31,9 +32,32 @@ def verify_pin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
 
     user_result = result[0]
 
-    return user.pin == user_result.pin
+    VALID_PIN = user.pin == user_result.pin
+
+    ENOUGH_MONEY = user_result.money - TICKET_COST >= 0
+
+    BOUGHT_TICKET = VALID_PIN and ENOUGH_MONEY
+
+    trans_item = models.Payment(
+        user_id=user.id, user_name=user_result.name, amount=TICKET_COST, success=BOUGHT_TICKET
+    )
+    db.add(trans_item)
+
+    if BOUGHT_TICKET:
+        user_result.money -= TICKET_COST
+        db.add(user_result)
+    
+    db.commit()
+    db.refresh(user_result)
+
+    return BOUGHT_TICKET
 
 
+@app.get("/payment")
+def read_payments(skip: int = 0, limit: int = 10, db: Session = Depends(database.get_db)):
+    payments = db.query(models.Payment).order_by(models.Payment.date).offset(skip).limit(limit).all()
+
+    return payments
 
 
 @app.get("/user")
