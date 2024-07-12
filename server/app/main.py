@@ -26,6 +26,7 @@ app.add_middleware(
 
 TICKET_COST = 5
 
+
 @app.post("/user")
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     db_item = models.User(
@@ -36,14 +37,21 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
 
     return db_item
 
+
 @app.post("/verify-pin")
 def verify_pin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
+    print(user.id, user.pin)
     result = db.query(models.User).filter(models.User.id == user.id).all()
 
     if len(result) == 0:
+        print('Usuario no encontrado')
         return False
+    else:
+        print('Usuario encontrado ga')
 
     user_result = result[0]
+
+    print(user.pin, user_result.pin)
 
     VALID_PIN = user.pin == user_result.pin
 
@@ -59,7 +67,7 @@ def verify_pin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
     if BOUGHT_TICKET:
         user_result.money -= TICKET_COST
         db.add(user_result)
-    
+
     db.commit()
     db.refresh(user_result)
 
@@ -68,7 +76,8 @@ def verify_pin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
 
 @app.get("/payment")
 def read_payments(skip: int = 0, limit: int = 10, db: Session = Depends(database.get_db)):
-    payments = db.query(models.Payment).order_by(models.Payment.date).offset(skip).limit(limit).all()
+    payments = db.query(models.Payment).order_by(
+        models.Payment.date).offset(skip).limit(limit).all()
 
     return payments
 
@@ -89,50 +98,44 @@ def search_user(face_encoding: list[float], db: Session = Depends(database.get_d
     # models.User.face_encoding).distance(target_vector) > threshold)
     query = db.query(models.User)
 
-
     result = query.all()
 
-    topResults : list[tuple[int, float]] = []
+    topResults: list[tuple[int, float]] = []
     face_encoding = np.array(face_encoding)
     face_encoding_norm = np.linalg.norm(face_encoding)
-    
-
 
     for possible_user in result:
         user_encodings = json.loads(possible_user.face_encoding)
-        for encoding in  user_encodings:
-        # print(len(user_encodings))
-        # print(type(user_encodings[0]))
+        for encoding in user_encodings:
+            # print(len(user_encodings))
+            # print(type(user_encodings[0]))
             possible_user_encoding = np.array(encoding)
-            
-            
+
             # sim : float = np.dot(face_encoding, possible_user_encoding)/(np.linalg.norm(possible_user_encoding)*face_encoding_norm)
 
-            sim: float = face_recognition.face_distance([face_encoding], possible_user_encoding)[0]
-
+            sim: float = face_recognition.face_distance(
+                [face_encoding], possible_user_encoding)[0]
 
             # if sim > threshold:
             possible_user_id: int = possible_user.id
             tupleData = (possible_user_id, sim)
             topResults.append(tupleData)
 
-
-    if(len(topResults) == 0):
+    if (len(topResults) == 0):
         return None
 
-
-    k = 5 
+    k = 5
     topResults.sort(key=lambda x: x[1], reverse=False)
     topResults = topResults[:k]
 
     print(topResults)
 
     resultsDir = {
-        x[0] : [] for x in topResults
+        x[0]: [] for x in topResults
     }
     for r in topResults:
         resultsDir[r[0]].append(r[1])
-    
+
     keyLenDict = {key: len(value) for key, value in resultsDir.items()}
 
     maxLen = max(keyLenDict.values())
@@ -142,10 +145,10 @@ def search_user(face_encoding: list[float], db: Session = Depends(database.get_d
     for key in keyLenDict:
         if keyLenDict[key] == maxLen:
             candidates[key] = min(resultsDir[key])
-    
+
     # candidate with max similarity
     bestMatch = min(candidates, key=candidates.get)
-    
+
     print(resultsDir)
     print(keyLenDict)
     print(candidates)
@@ -153,4 +156,4 @@ def search_user(face_encoding: list[float], db: Session = Depends(database.get_d
 
     return bestMatch
 
-    #return topResults[0][0]
+    # return topResults[0][0]

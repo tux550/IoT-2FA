@@ -13,7 +13,7 @@ from face_recognizer import face_recognition_fun, face_encodings_fun
 
 
 def get_image():
-    conn = http.client.HTTPConnection('192.168.225.111')
+    conn = http.client.HTTPConnection('192.168.157.111')
 
     # Send GET request
     conn.request("GET", "/capture")
@@ -212,7 +212,7 @@ if __name__ == '__main__':
                     # face = get_image()
 
                     # cv2.imwrite('face.png', face)
-                    # face_encoding = mock_face_encodings(face)
+                    # face_encoding = mock_face_encodings()
 
                     face_encoding = get_face_encodings()
 

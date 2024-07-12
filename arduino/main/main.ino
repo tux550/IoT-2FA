@@ -116,6 +116,12 @@ void setStates(int state)
     lcd.print("ACCEPT");
     
     break;
+  case READING_FINGER:
+    lcd.print("TAKING FINGER");
+    break;
+  case WAITING_PIN:
+    lcd.print("WAITING...");
+    break;
   case REJECT:
     lcd.print("REJECT");
     
