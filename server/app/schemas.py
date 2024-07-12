@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 class User(BaseModel):
     name: str
-    face_encoding: List[float]
+    face_encoding: str
     money: float
     pin: str
     

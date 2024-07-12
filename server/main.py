@@ -99,6 +99,8 @@ def face_recognition_fun(frame, haar_cascade):
     max_area = -1
     cropped_image = [None]
 
+    #print(faces)
+
     for x, y, w, h in faces:
         # crop the image to select only the face
         if w * h > max_area:
@@ -124,6 +126,7 @@ def get_face_encodings():
         if face is not None:
             face_location = face_recognition.face_locations(face)
             face_encodings = face_encodings_fun(frame, face_location)
+
             if face_encodings == []:
                 print("No se pudo conseguir encodings...", face_encodings)
             else:
@@ -134,6 +137,31 @@ def get_face_encodings():
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+    cv2.destroyAllWindows()
+
+def get_face_encodings_camera(cap):
+    haar_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+
+    while True:
+        ret, frame = cap.read()
+        face = face_recognition_fun(frame, haar_cascade)
+        if face is not None:
+            face_location = face_recognition.face_locations(face)
+            face_encodings = face_encodings_fun(frame, face_location)
+            
+            #print(face_encodings)
+            #print(len(face_encodings))
+            if face_encodings == []:
+                print("No se pudo conseguir encodings...", face_encodings)
+            else:
+                cv2.destroyAllWindows()
+                return list(face_encodings[0])
+
+        cv2.imshow('frame', frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    cv2.destroyAllWindows()
 
 
 def verify_user_pin(id, pin):

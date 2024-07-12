@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+import json
+import face_recognition
 
 import random
 
@@ -90,26 +92,65 @@ def search_user(face_encoding: list[float], db: Session = Depends(database.get_d
 
     result = query.all()
 
-    topResults = []
+    topResults : list[tuple[int, float]] = []
     face_encoding = np.array(face_encoding)
     face_encoding_norm = np.linalg.norm(face_encoding)
     
 
 
     for possible_user in result:
-        possible_user_encoding = np.array(possible_user.face_encoding)
-        
-        
-        sim = np.dot(face_encoding, possible_user_encoding)/(np.linalg.norm(possible_user_encoding)*face_encoding_norm)
+        user_encodings = json.loads(possible_user.face_encoding)
+        for encoding in  user_encodings:
+        # print(len(user_encodings))
+        # print(type(user_encodings[0]))
+            possible_user_encoding = np.array(encoding)
+            
+            
+            # sim : float = np.dot(face_encoding, possible_user_encoding)/(np.linalg.norm(possible_user_encoding)*face_encoding_norm)
 
-        if sim > threshold:
-            topResults.append((possible_user.id, sim))
+            sim: float = face_recognition.face_distance([face_encoding], possible_user_encoding)[0]
 
-    topResults.sort(key=lambda x: x[1], reverse=True)
 
-    print(topResults)
+            # if sim > threshold:
+            possible_user_id: int = possible_user.id
+            tupleData = (possible_user_id, sim)
+            topResults.append(tupleData)
+
 
     if(len(topResults) == 0):
         return None
 
-    return topResults[0][0]
+
+    k = 5 
+    topResults.sort(key=lambda x: x[1], reverse=False)
+    topResults = topResults[:k]
+
+    print(topResults)
+
+    resultsDir = {
+        x[0] : [] for x in topResults
+    }
+    for r in topResults:
+        resultsDir[r[0]].append(r[1])
+    
+    keyLenDict = {key: len(value) for key, value in resultsDir.items()}
+
+    maxLen = max(keyLenDict.values())
+
+    candidates = {}
+
+    for key in keyLenDict:
+        if keyLenDict[key] == maxLen:
+            candidates[key] = min(resultsDir[key])
+    
+    # candidate with max similarity
+    bestMatch = min(candidates, key=candidates.get)
+    
+    print(resultsDir)
+    print(keyLenDict)
+    print(candidates)
+    print(bestMatch)
+
+    return bestMatch
+
+    #return topResults[0][0]

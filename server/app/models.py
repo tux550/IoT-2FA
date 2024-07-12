@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text
 
 from sqlalchemy.dialects.postgresql import ARRAY
 
@@ -11,7 +11,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, index=True)
-    face_encoding = Column(ARRAY(Float))
+    face_encoding = Column(Text)
     money = Column(Float, default=0.0)
     pin = Column(String)
 
