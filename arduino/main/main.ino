@@ -22,7 +22,7 @@
 #if (defined(__AVR__) || defined(ESP8266)) && !defined(__AVR_ATmega2560__)
 // pin #4 is IN from sensor
 // pin #5 is OUT from arduino
-SoftwareSerial mySerial(4, 5);
+SoftwareSerial mySerial(2, 3);
 #else
 #define mySerial Serial1
 #endif
@@ -54,6 +54,38 @@ Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_N
 String inputString = "";
 String serverStringResponse = "";
 
+void initFingerPrint(){
+   // set the data rate for the sensor serial port
+  finger.begin(57600);
+  delay(5);
+  if (finger.verifyPassword()) {
+    Serial.println("Found fingerprint sensor!");
+  } else {
+    Serial.println("Did not find fingerprint sensor :(");
+    while (1) { delay(1); }
+  }
+
+  Serial.println(F("Reading sensor parameters"));
+  finger.getParameters();
+  Serial.print(F("Status: 0x")); Serial.println(finger.status_reg, HEX);
+  Serial.print(F("Sys ID: 0x")); Serial.println(finger.system_id, HEX);
+  Serial.print(F("Capacity: ")); Serial.println(finger.capacity);
+  Serial.print(F("Security level: ")); Serial.println(finger.security_level);
+  Serial.print(F("Device address: ")); Serial.println(finger.device_addr, HEX);
+  Serial.print(F("Packet len: ")); Serial.println(finger.packet_len);
+  Serial.print(F("Baud rate: ")); Serial.println(finger.baud_rate);
+
+  finger.getTemplateCount();
+
+  if (finger.templateCount == 0) {
+    Serial.print("Sensor doesn't contain any fingerprint data. Please run the 'enroll' example.");
+  }
+  else {
+    Serial.println("Waiting for valid finger...");
+      Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
+  }
+}
+
 // State management
 void initLCD()
 {
@@ -63,11 +95,12 @@ void initLCD()
 
 void setStates(int state)
 {
+  Serial.println("State: " + String(state));
   STATE = state;
   LAST_CHANGE_TIME = millis();
   lcd.clear();
 
-  Serial.println("El estado es" + String(STATE));
+  //Serial.println("El estado es" + String(STATE));
   switch (state)
   {
   case READING_PIN:
@@ -98,7 +131,6 @@ bool isCameraButtonPressed()
 
 bool isFingerButtonPressed()
 {
-  return false;
   return digitalRead(BUTTON_FINGER_PIN) == HIGH;
 }
 
@@ -141,6 +173,8 @@ void setup()
   initLCD();
   pinMode(BUTTON_CAMERA_PIN, INPUT);
   pinMode(BUTTON_FINGER_PIN, INPUT);
+
+  initFingerPrint();
   
 }
 void loop()
@@ -159,6 +193,8 @@ void loop()
     else if (isFingerButtonPressed())
     {
       // Wait for response
+      Serial.println("TAKE_FINGER");
+
       setStates(READING_FINGER);
     }
   }
@@ -167,12 +203,15 @@ void loop()
 
     // Read finger
     int id = getFingerprintIDez();
+    //Serial.println("TAKING_FINGER");
+
     if (id != -1)
     {
       // Send id to server
-      Serial.println("FINGER:" + id);
-      setStates(WAITING_PIN);
+      Serial.println("FINGER:" + String(id));
+      setStates(READING_PIN);
     }
+    delay(50);
   }
   else if (STATE == WAITING_IMAGE)
   {
@@ -255,16 +294,24 @@ int getFingerprintIDez()
   // Else return -1
 
   uint8_t p = finger.getImage();
-  if (p != FINGERPRINT_OK)
+  
+
+  if (p != FINGERPRINT_OK){
+    //Serial.print("a");
     return -1;
+  }
 
   p = finger.image2Tz();
-  if (p != FINGERPRINT_OK)
+  if (p != FINGERPRINT_OK){
+    //Serial.print("b");
     return -1;
+  }
 
   p = finger.fingerFastSearch();
-  if (p != FINGERPRINT_OK)
+  if (p != FINGERPRINT_OK){
+     //Serial.print("c");
     return -1;
+  }
 
   // Serial.print("Found ID #"); Serial.print(finger.fingerID);
   // Serial.print(" with confidence of "); Serial.println(finger.confidence);
