@@ -14,8 +14,8 @@
 #define ACCEPT_DELAY 5000
 #define REJECT_DELAY 5000
 
-#define BUTTON_CAMERA_PIN 2
-#define BUTTON_FINGER_PIN 3
+#define BUTTON_CAMERA_PIN 47
+#define BUTTON_FINGER_PIN 49
 
 // Fingerprint sensor
 #include <Adafruit_Fingerprint.h>
@@ -34,7 +34,7 @@ const int ROW_NUM = 4;
 const int COLUMN_NUM = 4;
 char buffer[32];
 // LCD display
-const int rs = 46, en = 48, d4 = 53, d5 = 51, d6 = 49, d7 = 47;
+const int rs = 3, en = 2, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // 4x4 Keypad
